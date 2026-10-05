@@ -1,0 +1,46 @@
+# Environment & secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Database
+beismart.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+.vscode/
+
+# Temp/debug scripts (the real test suite in tests/ is tracked)
+debug_*.py
+test_*.py
+!tests/test_*.py
+
+# Temp files
+~$*
+*.tmp
+
+# Any SQLite database (the rework uses beismart_v2.db)
+*.db
+
+# Daily refresh log
+logs/
+
+# Exported demo data (made by the export step; a sample is made for testing)
+web/data/
+
+# Editor settings
+.idea/
+
+# Public demo export (python -m beismart.export)
+dist/
+
+# Made by the copy script
+.public-copy

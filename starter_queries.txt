@@ -1,0 +1,16 @@
+# Products the daily refresh always keeps up to date, one search per line.
+# Lines starting with # and blank lines are ignored. Add or remove freely; each query takes the
+# job about 20 seconds, so a dozen is roughly 4 minutes.
+samsung tv
+hisense tv
+iphone 15
+iphone 13
+samsung galaxy
+tecno
+fridge
+washing machine
+microwave
+air fryer
+blender
+laptop
+headphones
