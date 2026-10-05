@@ -34,7 +34,7 @@ Windows, Python 3.13 and Google Chrome:
 
 Then open http://127.0.0.1:8000. More detail, including the daily task, email settings and the API routes: [docs/RUNNING.md](docs/RUNNING.md).
 
-Tests: `.venv\Scripts\python -m pytest` (255 tests, all offline). The scraper tests run against saved copies of the stores' own pages, which are kept out of this public repo.
+Tests: `.venv\Scripts\python -m pytest` (262 tests, all offline). The scraper tests run against saved copies of the stores' own pages, which are kept out of this public repo.
 
 ## Status
 

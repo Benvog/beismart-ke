@@ -7,6 +7,7 @@ Run it as its own process, not inside the web server:
     python -m beismart.scheduler --once -q "iphone 13" -q "fridge"     refresh just these
 
 What gets refreshed: confirmed watchlist queries, then the most-searched ones, then starter_queries.txt.
+After refreshing (and sending due alerts), the public demo is published when BEISMART_PAGES_DIR is set (see publish.py).
 Progress is logged to logs/refresh.log.
 
 `--once` suits Windows Task Scheduler (daily), which also survives reboots."""
@@ -86,9 +87,11 @@ def queries_to_refresh(conn: sqlite3.Connection, limit: int = MAX_POPULAR, start
 
 async def run_job(conn: sqlite3.Connection, queries: list[str] | None = None,
                   stores: list[Scraper] | None = None, pause_s: float = PAUSE_BETWEEN_S,
-                  mailer: Mailer | None = None, base_url: str = "http://127.0.0.1:8000") -> JobSummary:
-    """Refresh each query in turn, then send any price alerts that are due (when a mailer is given).
-    One query failing never stops the rest."""
+                  mailer: Mailer | None = None, base_url: str = "http://127.0.0.1:8000",
+                  pages_dir: str | None = None) -> JobSummary:
+    """Refresh each query in turn, then send any price alerts that are due (when a mailer is given), then publish the
+    public demo (when pages_dir is given). One query failing never stops the rest; a failed alert run or publish is
+    logged and never undoes the refresh."""
     queries = queries if queries is not None else queries_to_refresh(conn)
     summary = JobSummary(queries=queries)
     started = time.monotonic()
@@ -113,6 +116,15 @@ async def run_job(conn: sqlite3.Connection, queries: list[str] | None = None,
                      a.checked, a.sent, a.failed, a.rearmed, a.expired)
         except Exception:
             log.exception("Checking price alerts failed")    # the refresh itself already succeeded and is saved
+    if pages_dir:
+        from .publish import publish                          # imported here: publish -> export -> api -> scheduler
+        try:
+            r = publish(conn, pages_dir)
+            s = r.summary
+            log.info("Demo %s: %d searches, %d products, %d price drops",
+                     "published" if r.pushed else "unchanged", len(s.queries), s.products, s.drops)
+        except (Exception, SystemExit) as e:                  # SystemExit: publish refuses (empty export, bad folder)
+            log.error("Publishing the demo failed: %s", e)
     return summary
 
 
@@ -121,9 +133,10 @@ async def main_async(args: argparse.Namespace) -> None:
     interval = args.hours * 3600
     mailer = None if args.no_alerts else get_mailer()
     base_url = os.environ.get("BEISMART_BASE_URL", "http://127.0.0.1:8000")
+    pages_dir = None if args.no_publish else os.environ.get("BEISMART_PAGES_DIR")
     try:
         while True:
-            await run_job(conn, args.query or None, mailer=mailer, base_url=base_url)
+            await run_job(conn, args.query or None, mailer=mailer, base_url=base_url, pages_dir=pages_dir)
             if args.once:
                 return
             log.info("Next refresh in %.0f hours", args.hours)
@@ -148,6 +161,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Keep BeiSmart's saved prices fresh.")
     parser.add_argument("--once", action="store_true", help="refresh once and exit")
     parser.add_argument("--no-alerts", action="store_true", help="refresh prices but do not send price alerts")
+    parser.add_argument("--no-publish", action="store_true", help="do not publish the demo even if BEISMART_PAGES_DIR is set")
     parser.add_argument("-q", "--query", action="append", help="refresh this query instead of the usual list (repeatable)")
     parser.add_argument("--db", default=os.environ.get("BEISMART_DB", "beismart_v2.db"))
     parser.add_argument("--log", default=os.environ.get("BEISMART_LOG", os.path.join("logs", "refresh.log")),

@@ -124,9 +124,14 @@ function saveButton(group) {
 }
 
 // Every store's price, compact, with how much more each costs than the cheapest.
+const OFFERS_SHOWN = 5;          // then "Show all N offers" (a store can list the same product many times)
+
 function compareStores(group, save) {
+  const offers = group.members.length;
+  const title = offers > group.store_count ? `${offers} offers from ${group.store_count} store${group.store_count === 1 ? "" : "s"}`
+    : group.store_count > 1 ? `Compare ${group.store_count} stores` : "Where to buy";
   const head = h("div", { class: "compare-head" },
-    h("h2", {}, group.store_count > 1 ? `Compare ${group.store_count} stores` : "Where to buy"),
+    h("h2", {}, title),
     save > 0 && h("span", { class: "card-note save" }, `Save up to ${money(save)}`));
   const rows = group.members.map((m, i) => {
     const url = safeUrl(m.url);
@@ -140,7 +145,11 @@ function compareStores(group, save) {
       h("span", { class: "cmp-price" }, money(m.price), m.converted && h("span", { class: "sr-intl" }, " intl")),
       url && h("span", { class: "cmp-go", "aria-hidden": "true" }, icon("external")));
   });
-  return h("div", { class: "compare" }, head, h("div", { class: "cmp-rows" }, rows),
+  const list = h("div", { class: "cmp-rows" }, rows.slice(0, OFFERS_SHOWN));
+  const more = offers > OFFERS_SHOWN + 1 && h("button", { type: "button", class: "link cmp-more",
+    onclick: (e) => { list.replaceChildren(...rows); e.currentTarget.remove(); } }, `Show all ${offers} offers`);
+  if (!more) list.replaceChildren(...rows);
+  return h("div", { class: "compare" }, head, list, more,
     group.store_count === 1 && h("p", { class: "fine" }, `Only ${group.members[0].store} lists this right now. We check every store daily.`));
 }
 

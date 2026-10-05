@@ -117,3 +117,29 @@ def test_starters_come_last_and_duplicates_are_dropped(conn):
     store.record_search(conn, "iphone 13")
     watch(conn, "ps5")
     assert queries_to_refresh(conn, starters=["fridge", "iphone 13", "laptop"]) == ["ps5", "iphone 13", "fridge", "laptop"]
+
+
+def test_the_job_publishes_the_demo_when_a_pages_folder_is_given(conn, monkeypatch):
+    calls = []
+
+    class Result:
+        pushed = True
+        summary = type("S", (), {"queries": ["q"], "products": 1, "drops": 0})()
+
+    monkeypatch.setattr("beismart.publish.publish", lambda c, pages: calls.append(pages) or Result())
+    asyncio.run(run_job(conn, ["fridge"], stores=[Recording()], pause_s=0, pages_dir="D:/pages"))
+    assert calls == ["D:/pages"]
+    asyncio.run(run_job(conn, ["fridge"], stores=[Recording()], pause_s=0))          # no folder: no publish
+    assert calls == ["D:/pages"]
+
+
+@pytest.mark.parametrize("error", [RuntimeError("git push failed"), SystemExit("empty export")])
+def test_a_failed_publish_is_logged_and_the_refresh_still_counts(conn, monkeypatch, caplog, error):
+    def boom(c, pages):
+        raise error
+
+    monkeypatch.setattr("beismart.publish.publish", boom)
+    summary = asyncio.run(run_job(conn, ["fridge"], stores=[Recording()], pause_s=0, pages_dir="D:/pages"))
+    assert summary.listings == 1
+    assert "Publishing the demo failed" in caplog.text
+

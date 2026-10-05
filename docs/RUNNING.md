@@ -31,6 +31,19 @@ and the store list. Amazon is left out entirely. A search with no results is ski
 itself. Preview it as plain files: `.venv\Scripts\python -m http.server 8001 --bind 127.0.0.1 -d dist/demo`, then open
 http://127.0.0.1:8001/?source=static (on GitHub Pages the website picks the files by itself).
 
+## Publishing the demo (GitHub Pages)
+    .venv\Scripts\python -m beismart.publish --pages <gh-pages checkout>
+Exports (as above) and pushes the result to the `gh-pages` branch of the public repo https://github.com/Benvog/beismart-ke,
+which GitHub Pages serves at https://benvog.github.io/beismart-ke/ (live about a minute later). `--pages` (or the
+`BEISMART_PAGES_DIR` environment variable) is a git checkout of that branch. The branch keeps one commit that is replaced
+each time; the push uses `--force-with-lease`, so it refuses if the branch has changes it did not make. Nothing is
+published when the export is empty, so a broken refresh never blanks the live demo. `--no-push` commits without pushing.
+
+**The daily task publishes it automatically:** the refresh job ends by publishing the demo whenever the Windows user
+environment variable `BEISMART_PAGES_DIR` is set. The log ends with
+"Demo published: …" or "Publishing the demo failed: …" (a failure never undoes the refresh). Add `--no-publish` to a
+manual `beismart.scheduler` run to skip it. Pushing needs git credentials that work without a prompt (for example an SSH key).
+
 ## The website (web/)
 - `index.html`: home (no search) and results (`?q=fridge`, with sort and filters in the address).
 - `product.html?q=fridge&id=<product id>`: one product across stores, price history and the email alert form.

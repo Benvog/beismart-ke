@@ -151,7 +151,9 @@ function render() {
   const deals = bestDeals(sorted);
   const storeCount = new Set(r.results.map((l) => l.store)).size;
   const active = activeCount(state.filters);
-  const filtered = shown.length !== sorted.length || active > 0;
+  // Sold-out products are hidden by default ("In stock only"), so that is the count to compare with.
+  const total = state.filters.all ? sorted.length : applyFilters(sorted, NO_FILTERS).length;
+  const clear = active > 0 && h("button", { class: "link", type: "button", onclick: () => setFilters({ ...NO_FILTERS }) }, "Clear filters");
 
   const hiddenToggle = r.hidden_count > 0 && h("p", { class: "notice subtle" },
     `${r.hidden_count} hidden as accessories or oddities · `,
@@ -162,11 +164,10 @@ function render() {
     onclick: () => openFilterSheet(sorted, state.filters, setFilters) },
     icon("sliders"), "Filters", active > 0 && h("span", { class: "count" }, String(active)));
 
-  const meta = filtered
-    ? [`${shown.length} of ${sorted.length} products`, " · ",
-       h("button", { class: "link", type: "button", onclick: () => setFilters({ ...NO_FILTERS }) }, "Clear filters")]
-    : [`${sorted.length} product${sorted.length === 1 ? "" : "s"} from ${storeCount} store${storeCount === 1 ? "" : "s"}`,
-       freshness(r.groups) && ` · ${freshness(r.groups)}`];
+  const meta = shown.length !== total
+    ? [`${shown.length} of ${total} products`, clear && " · ", clear]
+    : [`${total} product${total === 1 ? "" : "s"} from ${storeCount} store${storeCount === 1 ? "" : "s"}`,
+       freshness(r.groups) && ` · ${freshness(r.groups)}`, clear && " · ", clear];
 
   fill(main,
     resultsHead(r.query, meta, summary(shown)),

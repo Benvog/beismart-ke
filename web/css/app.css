@@ -823,3 +823,4 @@ body.is-home .top .search { visibility: hidden; }
 .filters-side .skip-link { position: absolute; }
 .filters-side .skip-link:focus { position: static; display: block; margin-bottom: 12px; }
 main:focus, .results-main:focus { outline: none; }
+.cmp-more { justify-self: start; font-size: 13.5px; }
